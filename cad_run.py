@@ -2,7 +2,7 @@
 from build123d import *
 from ocp_vscode import *
 
-from hexplant import HexPlant
+from HexPlant import HexPlant
 
 set_port(3939)
 
@@ -10,14 +10,14 @@ set_defaults(reset_camera=Camera.CENTER, helper_scale=5)
 show_clear()
 import random
 
-nx = 32
-ny = 32
+nx = 16
+ny = 16
 hex = HexPlant(nx, ny)
-number_lines = 5
+number_lines = 8
 lines = []
 for i in range(0, number_lines + 1):
-    x = random.randint(0, nx / 4)
-    y = random.randint(0, ny / 4)
+    x = random.randint(0, int(nx / 4))
+    y = random.randint(0, int(ny / 4))
     start = random.choice([(x, int(ny / 4)), (int(nx / 4), y)])
     lines.append(hex.grow_line(start[0], start[1], 50))
 line = lines[0]
