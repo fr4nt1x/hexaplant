@@ -95,8 +95,10 @@ class HexPlant:
     def _get_existing_prob(self, current):
         # Increaase probability for existing edges
         probs = [1, 1, 1, 1, 1, 1]
+        current_x = current[0]
+        current_y = current[1]
         for i in range(0, 6):
-            if self.current_edges[current[0]][current[1]][i]:
+            if self.current_edges[current_y][current_x][i]:
                 probs[i] = 2
         return probs
 
@@ -108,25 +110,26 @@ class HexPlant:
         TODO optimize such that not all edges get checked
         """
         probs = [1, 1, 1, 1, 1, 1]
-
+        current_x = current[0]
+        current_y = current[1]
         is_current_row_odd = current[1] % 2
 
         for i in range(0, 6):
             # Check edge before
             index_before = (i - 1) % 6
-            if self.current_edges[current[0]][current[1]][index_before]:
+            if self.current_edges[current_y][current_x][index_before]:
                 next_dir = self.indices[is_current_row_odd][index_before]
                 next_x = current[0] + next_dir[0]
                 next_y = current[1] + next_dir[1]
                 # Symmetry yields that if previous edge was edge 0, then the triangle completing edge
                 # is edge 2 from the pov of the end point of the previous edge
                 searched_edge = (index_before + 2) % 6
-                if self.current_edges[next_x][next_y][searched_edge]:
+                if self.current_edges[next_y][next_x][searched_edge]:
                     probs[i] = 0
 
             # Check edge after
             index_after = (i + 1) % 6
-            if self.current_edges[current[0]][current[1]][index_after]:
+            if self.current_edges[current_y][current_x][index_after]:
                 # Same as before, but index_before is now i
                 next_dir = self.indices[is_current_row_odd][i]
                 next_x = current[0] + next_dir[0]
@@ -134,7 +137,7 @@ class HexPlant:
                 # Symmetry yields that if previous edge was edge 0, then the triangle completing edge
                 # is edge 2 from the pov of the end point of the previous edge
                 searched_edge = (i + 2) % 6
-                if self.current_edges[next_x][next_y][searched_edge]:
+                if self.current_edges[next_y][next_x][searched_edge]:
                     probs[i] = 0
         return probs
 
@@ -175,25 +178,29 @@ class HexPlant:
             probs = list(map(mul, probs, without_triangles))
 
             if sum(probs) < 0.1:
-                print("Breaking because probs are to small")
+                # print("Breaking because probs are to small")
                 break
 
             next_index = random.choices([0, 1, 2, 3, 4, 5], weights=probs)[0]
             reversed_index = (next_index + 3) % 6
             next = self.indices[is_current_row_odd][next_index]
-            self.current_edges[current_x][current_y][next_index] = True
+            self.current_edges[current_y][current_x][next_index] = True
             current_x = current_x + next[0]
             current_y = current_y + next[1]
 
-            self.current_edges[current_x][current_y][reversed_index] = True
+            self.current_edges[current_y][current_x][reversed_index] = True
             line.append((current_x, current_y))
         return line
 
     def convert_point_to_hexagonal(self, x, y, scale=1.0):
-        point_x = x / self.nx
-        point_y = (y * sqrt(3) * 0.5) / self.ny
+        """
+        scale=1.0 means the longest side is 1.0 units long
+        """
+        n_max = max(self.nx, self.ny)
+        point_x = x / (n_max - 1)
+        point_y = (y * sqrt(3) * 0.5) / (n_max - 1)
         if y % 2:
-            point_x = (x + 0.5) / self.nx
+            point_x = (x + 0.5) / (n_max - 1)
 
         return (point_x * scale, point_y * scale)
 
