@@ -10,7 +10,7 @@ set_defaults(reset_camera=Camera.CENTER, helper_scale=5)
 show_clear()
 import random
 
-random.seed(43)
+# random.seed(43)
 tol = 0.0001
 shorting_factor = 0.1
 
@@ -40,6 +40,7 @@ for i in range(0, number_lines + 1):
     lines.append(hex.grow_line(start[0], start[1], 50))
 
 all_lines = []
+all_lines_private = []
 all_circles = []
 all_parts = []
 
@@ -63,7 +64,7 @@ for line in lines:
             with BuildLine(mode=Mode.PRIVATE) as line_l:
                 l1 = Line(start_point, end_point)
             section_lines += line_l.edges()
-        # all_lines += section_lines
+        all_lines_private += section_lines
         obj_to_add = []
         for i in range(0, len(section_lines) - 1):
             section_line = section_lines[i]
@@ -72,7 +73,6 @@ for line in lines:
             next_line_tangent = next_section_line % 0
             line_tangent = section_line % 1
 
-            tangen_diff: Vector = line_tangent - next_line_tangent
             angle = line_tangent.get_angle(next_line_tangent)
 
             with BuildLine(mode=Mode.PRIVATE) as path_l:
@@ -90,6 +90,7 @@ for line in lines:
                         tangents=[l1 % 1, section_lines[i + 1] % 0],
                     )
                     obj_to_add.append(spline)
+        obj_to_add.append(section_lines[-1])
         add(obj_to_add)
         all_lines += obj_to_add
         circles = []
@@ -107,6 +108,7 @@ for line in lines:
 
 show_object(all_parts, name="branches", clear=True)
 show_object(all_lines, name="lines")
+show_object(all_lines_private, name="lines private")
 
 show_object(all_circles, name="circles")
 # for i, line in enumerate(all_lines):
