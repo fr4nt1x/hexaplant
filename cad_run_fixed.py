@@ -10,7 +10,7 @@ set_defaults(reset_camera=Camera.CENTER, helper_scale=5)
 show_clear()
 import random
 
-random.seed(42)
+random.seed(43)
 nx = 8
 ny = 16
 n_max = max(nx, ny)
@@ -21,7 +21,7 @@ print(f"Side Length: {hex_side_length}")
 print(f"Radius: {radius}")
 print(radius)
 hex = HexPlant(nx, ny)
-number_lines = 2
+number_lines = 16
 lines = []
 start_x = int(nx / 2)
 start_y = int(ny / 2)
@@ -43,45 +43,31 @@ for line in lines:
     line_converted = [
         hex.convert_point_to_hexagonal(point[0], point[1], 100) for point in line
     ]
+    print(line_converted)
     with BuildPart() as branch_part:
 
         with BuildLine() as line_l:
+            # l = Spline(line_converted)
             l = Polyline(line_converted)
+
         all_lines += line_l.line
 
         circles = []
-        for i, point in enumerate(line_converted):
-            if i == 0:
-                continue
 
-            previous_i = i - 1
-
-            z_dir = (
-                line_converted[i][0] - line_converted[previous_i][0],
-                line_converted[i][1] - line_converted[previous_i][1],
-            )
-
-            plane = Plane(origin=line_converted[previous_i], z_dir=z_dir)
-
-            with BuildSketch(plane, mode=Mode.PRIVATE) as circleSK:
-                Circle(radius)
-            circles += circleSK.sketch.faces()
-        # Last circle
-        plane = Plane(origin=l @ 1, z_dir=l % 1)
-        with BuildSketch(plane, mode=Mode.PRIVATE) as circleSK:
+        # First circle
+        plane = Plane(origin=l @ 0, z_dir=l % 0)
+        with BuildSketch(plane) as circleSK:
             Circle(radius)
         circles += circleSK.sketch.faces()
 
-        all_circles += circles
-        print("Sweep")
-        sweep(sections=circles, multisection=True, transition=Transition.ROUND)
+        sweep(sections=circles, transition=Transition.ROUND)
     all_parts += branch_part.part
 
 # export_step(branches.part, "branches.stp")
 
-show_object(all_parts, clear=True)
-show_object(all_lines)
-show_object(all_circles)
+show_object(all_parts, name="branches", clear=True)
+show_object(all_lines, name="lines")
+show_object(all_circles, name="circles")
 # for i, line in enumerate(all_lines):
 #     show_object(line, name="line" + str(i))
 

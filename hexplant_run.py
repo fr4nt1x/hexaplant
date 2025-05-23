@@ -43,8 +43,8 @@ def reduce_lines(lines):
 
 if __name__ == "__main__":
     line_width = 0.001
-    nx = 8
-    ny = 16
+    nx = 16
+    ny = 24
     hex = HexPlant(nx, ny)
     number_lines = 16
     lines = []

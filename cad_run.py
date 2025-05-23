@@ -11,8 +11,8 @@ show_clear()
 import random
 
 
-nx = 16
-ny = 32
+nx = 8
+ny = 16
 n_max = max(nx, ny)
 scaling = 100.0
 hex_side_length = scaling / (n_max - 1)
@@ -21,7 +21,7 @@ print(f"Side Length: {hex_side_length}")
 print(f"Radius: {radius}")
 print(radius)
 hex = HexPlant(nx, ny)
-number_lines = 40
+number_lines = 1
 lines = []
 start_x = int(nx / 2)
 start_y = int(ny / 2)
@@ -31,7 +31,7 @@ start_hex_y = start_hex[1]
 
 outline_points_closed = [
     (0, 0),
-    (start_x + 1, 0),
+    (start_x + int((nx / 4)), 0),
     (start_x - 1, start_y),
     (0, start_y + 2),
     (0, 0),
@@ -41,7 +41,7 @@ outline_solid = [
     for point in outline_points_closed
 ]
 
-lines.append(outline_points_closed)
+# lines.append(outline_points_closed)
 for i in range(0, number_lines + 1):
     x = random.randint(0, start_x)
     y = random.randint(0, start_y)
@@ -66,22 +66,33 @@ with BuildPart() as branches:
         line_converted = [
             hex.convert_point_to_hexagonal(point[0], point[1], 100) for point in line
         ]
-        # print(line_converted)
+
         with BuildLine() as ex1_ln:
             l = Polyline(line_converted)
         all_lines += ex1_ln.line
 
-        z_dir = (
-            line_converted[1][0] - line_converted[0][0],
-            line_converted[1][1] - line_converted[0][1],
-        )
+        circles = []
+        for i, point in enumerate(line_converted):
+            if i == 0:
+                continue
+            previous_i = i - 1
 
-        plane = Plane(origin=line_converted[0], z_dir=l % 0)
+            z_dir = (
+                line_converted[i][0] - line_converted[previous_i][0],
+                line_converted[i][1] - line_converted[previous_i][1],
+            )
 
-        with BuildSketch(plane) as rectangleSK:
-            Circle(radius)
-        all_circles += branches.pending_faces
-        sweep(transition=Transition.ROUND)
+            plane = Plane(origin=line_converted[previous_i], z_dir=z_dir)
+
+            with BuildSketch(plane, mode=Mode.PRIVATE) as circleSK:
+                Circle(radius + 2 * i)
+            circles += circleSK.sketch.faces()
+            print("loop")
+        all_circles += circles
+        print(circles)
+        sweep(path=ex1_ln.line, sections=circles, multisection=True)
+
+export_step(branches.part, "branches.stp")
 
 show_object(all_lines, clear=True)
 show_object(all_circles)
@@ -91,8 +102,11 @@ show_object(all_circles)
 # for i, circle in enumerate(all_circles):
 #     show_object(circle, name="circle" + str(i))
 show_object(branches.part)
+
 # show_all()
 
+
+# %%
 
 # %%
 
