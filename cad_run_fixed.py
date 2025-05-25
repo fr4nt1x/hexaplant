@@ -10,7 +10,7 @@ set_defaults(reset_camera=Camera.CENTER, helper_scale=5)
 show_clear()
 import random
 
-# random.seed(43)
+random.seed(43)
 tol = 0.0001
 shorting_factor = 0.1
 
@@ -24,7 +24,7 @@ print(f"Side Length: {hex_side_length}")
 print(f"Radius: {radius}")
 print(radius)
 hex = HexPlant(nx, ny)
-number_lines = 26
+number_lines = 16
 lines = []
 start_x = int(nx / 2)
 start_y = int(ny / 2)
@@ -56,6 +56,8 @@ for i in range(0, number_lines + 1):
 all_lines = []
 all_lines_private = []
 all_circles = []
+all_paths = []
+all_planes = []
 all_parts = []
 
 
@@ -131,21 +133,42 @@ for line in lines:
                     obj_to_add.append(spline)
         obj_to_add.append(section_lines[-1])
         add(obj_to_add)
+        path = Wire.combine(branch_part.pending_edges)[0]
+        all_paths.append(path)
         all_lines += obj_to_add
+
         circles = []
 
-        # First circle
-        plane = Plane(origin=section_lines[0] @ 0, z_dir=section_lines[0] % 0)
-        with BuildSketch(plane) as circleSK:
-            RegularPolygon(radius, 8)
-        circles += circleSK.sketch.faces()
+        segment_count = 12
+        rotation = 0
+        for i in range(segment_count + 1):
+            plane = Plane(
+                origin=path @ (i / segment_count),
+                z_dir=path % (i / segment_count),
+                x_dir=(
+                    0,
+                    0,
+                    1,
+                ),  # Needed as the path seems to have random orientation otherwise
+            )
+
+            all_planes.append(plane)
+            with BuildSketch(plane) as circleSK:
+                RegularPolygon(radius + i * 0.05, 6, rotation=rotation)
+                rotation += 17
+                rotation = rotation % 360
+
+            circles += circleSK.sketch.faces()
         all_circles += circles
-        sweep(transition=Transition.ROUND)
+
+        sweep(sections=(circles), multisection=True)
     all_parts += branch_part.part
 
 # export_step(branches.part, "branches.stp")
 
 show_object(all_parts, name="branches", clear=True)
+show_object(all_paths, name="all_paths")
+# show_object(all_planes, name="all_planes")
 # show_object(all_lines, name="lines")
 # show_object(all_lines_private, name="lines private")
 
