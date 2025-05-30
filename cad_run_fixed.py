@@ -1,4 +1,5 @@
 # %%
+
 from build123d import *
 from ocp_vscode import *
 
@@ -9,8 +10,15 @@ set_port(3939)
 set_defaults(reset_camera=Camera.CENTER, helper_scale=5)
 show_clear()
 import random
+import sys
+from itertools import product
 
-random.seed(43)
+seed = random.randrange(sys.maxsize)
+random.seed(283662149582336880)
+
+print("Seed was:", seed)
+
+# random.seed(43)
 tol = 0.0001
 shorting_factor = 0.1
 
@@ -18,8 +26,12 @@ nx = 16
 ny = 32
 n_max = max(nx, ny)
 scaling = 100.0
+
 hex_side_length = scaling / (n_max - 1)
 radius = hex_side_length / 4.0
+
+max_radius = 0.3 * radius
+random_grid = 0.1
 print(f"Side Length: {hex_side_length}")
 print(f"Radius: {radius}")
 print(radius)
@@ -36,10 +48,11 @@ outline_points_closed = [
     (0, 0),
     (start_x + int((nx / 4)), 0),
     (start_x - 1, start_y),
-    (5, ny - 1),
+    (int(nx / 2) - 3, ny - 1),
     (0, ny - 1),
     (0, 0),
 ]
+
 outline_solid = [
     hex.convert_point_to_hexagonal(point[0], point[1], scaling)
     for point in outline_points_closed
@@ -47,10 +60,12 @@ outline_solid = [
 
 
 # lines.append(outline_points_closed)
+possible_starts = list(product(range(1, start_x), range(1, start_y)))
+
+
 for i in range(0, number_lines + 1):
-    x = random.randint(1, start_x)
-    y = random.randint(1, start_y)
-    start = random.choice([(x, start_y), (start_x, y)])
+
+    start = random.choice(possible_starts)
     lines.append(hex.grow_line(start[0], start[1], 50))
 
 all_lines = []
@@ -65,32 +80,24 @@ all_parts = []
 with BuildPart() as outline_p:
     with BuildSketch() as outline_sk:
         with BuildLine() as outline_l:
-            Polyline(
-                outline_solid,
-            )
+            FilletPolyline(outline_solid, radius=2)
         make_face()
+        offset(amount=max_radius + hex_side_length*random_grid )
         # Rectangle(start_hex_x, start_hex_y)
 
     extrude(amount=radius - 0.2, both=True)  # Create a base block
 
-    with BuildLine() as outline_l:
-        l = Polyline(outline_solid)
-
-    # First circle
-    plane = Plane(origin=l @ 0, z_dir=l % 0)
-    with BuildSketch(plane) as circleSK:
-        Circle(radius - 0.2)
-
-    sweep(transition=Transition.ROUND)
+outline_p.part.label = "outline"
 all_parts.append(outline_p.part)
 
+
 ## Lines
-for line in lines:
+for line_index, line in enumerate(lines):
+    scaling = 100
     line_converted = [
-        hex.convert_point_to_hexagonal(point[0], point[1], 100) for point in line
+        hex.convert_point_to_hexagonal(point[0], point[1], scaling, random_grid)
+        for point in line
     ]
-    # print(line)
-    # print(line_converted)
 
     with BuildPart() as branch_part:
         section_lines = []
@@ -140,7 +147,8 @@ for line in lines:
         circles = []
 
         segment_count = 12
-        rotation = 0
+        rotation = 0  #
+        start_radius = radius + random.uniform(-max_radius, max_radius)
         for i in range(segment_count + 1):
             plane = Plane(
                 origin=path @ (i / segment_count),
@@ -154,7 +162,9 @@ for line in lines:
 
             all_planes.append(plane)
             with BuildSketch(plane) as circleSK:
-                RegularPolygon(radius + i * 0.05, 6, rotation=rotation)
+                RegularPolygon(
+                    start_radius - i * 0.025 * start_radius, 6, rotation=rotation
+                )
                 rotation += 17
                 rotation = rotation % 360
 
@@ -162,11 +172,16 @@ for line in lines:
         all_circles += circles
 
         sweep(sections=(circles), multisection=True)
-    all_parts += branch_part.part
 
-# export_step(branches.part, "branches.stp")
+    branch_part.part.label = f"branch_{line_index}"
+    all_parts.append(branch_part.part)
 
-show_object(all_parts, name="branches", clear=True)
+box_assembly = Compound(label=f"compound_{seed}", children=[x for x in all_parts])
+
+print(box_assembly.show_topology())
+export_step(box_assembly, f"branches.stp")
+
+show_object(box_assembly, name="branches", clear=True)
 show_object(all_paths, name="all_paths")
 # show_object(all_planes, name="all_planes")
 # show_object(all_lines, name="lines")

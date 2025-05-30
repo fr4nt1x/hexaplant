@@ -192,7 +192,7 @@ class HexPlant:
             line.append((current_x, current_y))
         return line
 
-    def convert_point_to_hexagonal(self, x, y, scale=1.0):
+    def convert_point_to_hexagonal(self, x, y, scale=1.0, random_factor=0.0):
         """
         scale=1.0 means the longest side is 1.0 units long
         """
@@ -202,7 +202,14 @@ class HexPlant:
         if y % 2:
             point_x = (x + 0.5) / (n_max - 1)
 
-        return (point_x * scale, point_y * scale)
+        ret_x = point_x * scale + (
+            (scale / n_max) * random.uniform(-random_factor, random_factor)
+        )
+        ret_y = point_y * scale + (
+            (scale / n_max) * random.uniform(-random_factor, random_factor)
+        )
+
+        return (ret_x, ret_y)
 
     def getGrid(self):
         conv_point = []
