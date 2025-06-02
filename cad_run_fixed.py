@@ -1,5 +1,6 @@
 # %%
 
+from time import time
 from build123d import *
 from ocp_vscode import *
 
@@ -25,7 +26,8 @@ shorting_factor = 0.1
 nx = 16
 ny = 32
 n_max = max(nx, ny)
-scaling = 100.0
+# Length of longest side in MM
+scaling = 200.0
 
 hex_side_length = scaling / (n_max - 1)
 radius = hex_side_length / 4.0
@@ -34,15 +36,16 @@ max_radius = 0.3 * radius
 random_grid = 0.1
 print(f"Side Length: {hex_side_length}")
 print(f"Radius: {radius}")
-print(radius)
+
 hex = HexPlant(nx, ny)
-number_lines = 16
+number_lines = 8
 lines = []
 start_x = int(nx / 2)
 start_y = int(ny / 2)
 start_hex = hex.convert_point_to_hexagonal(start_x, start_y, scaling)
 start_hex_x = start_hex[0]
 start_hex_y = start_hex[1]
+
 
 outline_points_closed = [
     (0, 0),
@@ -60,7 +63,7 @@ outline_solid = [
 
 
 # lines.append(outline_points_closed)
-possible_starts = list(product(range(1, start_x), range(1, start_y)))
+possible_starts = list(product(range(1, start_x-1), range(1, start_y-1)))
 
 
 for i in range(0, number_lines + 1):
@@ -75,6 +78,7 @@ all_paths = []
 all_planes = []
 all_parts = []
 
+tmp_time = time()
 
 ## Outline
 with BuildPart() as outline_p:
@@ -83,7 +87,6 @@ with BuildPart() as outline_p:
             FilletPolyline(outline_solid, radius=2)
         make_face()
         offset(amount=max_radius + hex_side_length*random_grid )
-        # Rectangle(start_hex_x, start_hex_y)
 
     extrude(amount=radius - 0.2, both=True)  # Create a base block
 
@@ -93,7 +96,6 @@ all_parts.append(outline_p.part)
 
 ## Lines
 for line_index, line in enumerate(lines):
-    scaling = 100
     line_converted = [
         hex.convert_point_to_hexagonal(point[0], point[1], scaling, random_grid)
         for point in line
@@ -176,15 +178,28 @@ for line_index, line in enumerate(lines):
     branch_part.part.label = f"branch_{line_index}"
     all_parts.append(branch_part.part)
 
+print(f"Time for generating cad: {time() - tmp_time}")
 box_assembly = Compound(label=f"compound_{seed}", children=[x for x in all_parts])
 
-print(box_assembly.show_topology())
-export_step(box_assembly, f"branches.stp")
+tmp_time = time()
+# part_fused = Part()+all_parts
 
+print(f"Time for fusing: {time() - tmp_time}")
+
+# print(box_assembly.show_topology())
+
+tmp_time = time()
+export_step(box_assembly, f"branches.stp")
+# export_step(part_fused, f"branches_fused.stp")
+print(f"Time for saving: {time() - tmp_time}")
 show_object(box_assembly, name="branches", clear=True)
-show_object(all_paths, name="all_paths")
+
+tmp_time = time()
+# show_object(part_fused, clear=True)
+# show_object(all_paths, name="all_paths")
 # show_object(all_planes, name="all_planes")
 # show_object(all_lines, name="lines")
 # show_object(all_lines_private, name="lines private")
 
-show_object(all_circles, name="circles")
+# show_object(all_circles, name="circles")
+print(f"Time for show: {time() - tmp_time}")
